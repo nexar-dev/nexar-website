@@ -1,5 +1,6 @@
 # Nexar
-Digital solutions built to grow businesses. 🚀 About
+Digital solutions built to grow businesses. 
+🚀 About
 
 Nexar is a digital solutions initiative focused on helping businesses strengthen their online presence, optimize operations, and scale through technology.
 
