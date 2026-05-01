@@ -43,7 +43,11 @@ export default function Navbar({
               alt="Nexar"
               className="h-10 w-auto object-contain"
             />
-            <span className="font-display font-bold text-2xl tracking-tight text-foreground">
+            <span
+              className={`font-display font-bold text-2xl tracking-tight ${
+                scrolled ? "text-foreground" : "text-on-dark"
+              }`}
+            >
               Nex<span className="text-gradient">ar</span>
             </span>
           </a>
@@ -53,7 +57,11 @@ export default function Navbar({
               <a
                 key={link.href}
                 href={link.href}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200"
+                className={`text-sm font-medium text-muted-foreground transition-colors duration-200 ${
+                  scrolled
+                    ? "hover:text-foreground"
+                    : "hover:text-primary-foreground"
+                }`}
               >
                 {link.label}
               </a>
