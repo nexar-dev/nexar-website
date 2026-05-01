@@ -1,34 +1,52 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { adminLogin } from '@/lib/leads-store';
+import { signInWithEmailAndPassword, getCurrentUser } from '@/lib/auth';
 import { toast } from 'sonner';
-import { Lock } from 'lucide-react';
+import { Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Redirecionar se já estiver logado
+  useEffect(() => {
+    const checkAuth = async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        router.push('/admin/dashboard');
+      }
+    };
+    
+    checkAuth();
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
     try {
-      const success = await adminLogin(email, password);
-      if (success) {
-        router.push('/admin');
+      const result = await signInWithEmailAndPassword(email, password);
+      
+      if (result.success) {
+        toast.success('Login realizado com sucesso!');
+        router.push('/admin/dashboard');
       } else {
-        toast.error('Email ou senha incorretos');
+        toast.error(result.error || 'Erro ao fazer login');
       }
-    } catch {
-      toast.error('Erro ao fazer login');
+    } catch (error) {
+      console.error('Erro no login:', error);
+      toast.error('Erro inesperado ao fazer login');
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-dark-base flex items-center justify-center px-4">
@@ -47,16 +65,36 @@ export default function AdminLoginPage() {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-on-dark mb-1.5">Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
-                className="w-full rounded-xl bg-dark-card border border-dark px-4 py-3 text-sm text-on-dark placeholder:text-on-dark-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                placeholder="admin@empresa.com" />
+              <input 
+                type="email" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                required
+                  className="w-full rounded-xl bg-dark-card border border-dark px-4 py-3 text-sm text-on-dark placeholder:text-on-dark-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  placeholder="seu@email.com"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-on-dark mb-1.5">Senha</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
-                className="w-full rounded-xl bg-dark-card border border-dark px-4 py-3 text-sm text-on-dark placeholder:text-on-dark-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                placeholder="••••••••" />
+              <div className="relative">
+                <input 
+                  type={showPassword ? 'text' : 'password'} 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  required
+                  className="w-full rounded-xl bg-dark-card border border-dark px-4 py-3 pr-10 text-sm text-on-dark placeholder:text-on-dark-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  placeholder="••••••••" 
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-on-dark-muted hover:text-on-dark transition-colors"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
+
             <button type="submit" disabled={loading}
               className="w-full inline-flex items-center justify-center rounded-xl bg-gradient-purple px-6 py-3 text-sm font-semibold text-primary-foreground shadow-glow transition-all hover:scale-105 hover:opacity-90 active:scale-110 disabled:opacity-50">
               {loading ? 'Entrando...' : 'Entrar'}
