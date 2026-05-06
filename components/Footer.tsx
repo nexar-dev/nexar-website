@@ -1,14 +1,23 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Mail, MessageCircle } from "lucide-react";
+import { navLinks } from "@/lib/nav-links";
 
 const nexarLogo = "/assets/nexar-logo.png";
 
-const links = {
-  Navegação: ["Possibilidades", "Como Funciona", "Benefícios"],
-  Contato: ["contato@nexar.com.br", "(12) 99769-2740"],
-};
+const contactLinks = [
+  {
+    label: "contato@nexar.com.br",
+    href: "mailto:contato@nexar.com.br",
+  },
+  {
+    label: "(12) 99769-2740",
+    href: "tel:+5512997692740",
+  },
+] as const;
 
 function LinkedinIcon() {
   return (
@@ -53,11 +62,26 @@ function InstagramIcon() {
 const socialLinks: { href: string; label: string; node: React.ReactNode }[] = [
   { href: "#", label: "LinkedIn", node: <LinkedinIcon /> },
   { href: "#", label: "Instagram", node: <InstagramIcon /> },
-  { href: "#", label: "Email", node: <Mail size={16} /> },
-  { href: "#", label: "WhatsApp", node: <MessageCircle size={16} /> },
+  { href: "mailto:contato@nexar.com.br", label: "Email", node: <Mail size={16} /> },
+  {
+    href: "https://wa.me/5512997692740",
+    label: "WhatsApp",
+    node: <MessageCircle size={16} />,
+  },
 ];
 
+/**
+ * Mesmo padrão da Navbar sobre fundo escuro (hero, barra transparente):
+ * `text-on-dark-muted` → `hover:text-primary-foreground` com `duration-200`.
+ */
+const footerInsetLinkClass =
+  "-mx-1 inline-flex max-w-fit rounded-md px-1 py-1 text-sm font-medium text-on-dark-muted transition-colors duration-200 hover:text-primary-foreground motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--dark-surface))]";
+
+
+
 export default function Footer() {
+  const pathname = usePathname();
+
   return (
     <footer className="bg-dark-surface border-t border-dark py-16">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -83,7 +107,9 @@ export default function Footer() {
                   key={label}
                   href={href}
                   aria-label={label}
-                  className="w-9 h-9 rounded-lg bg-dark-card flex items-center justify-center text-on-dark-muted hover:text-primary hover:bg-primary/10 transition-colors"
+                  target={href.startsWith("http") ? "_blank" : undefined}
+                  rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
+                  className="w-9 h-9 rounded-lg bg-dark-card flex items-center justify-center text-on-dark-muted hover:text-primary hover:bg-primary/10 transition-colors duration-200 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--dark-surface))]"
                 >
                   {node}
                 </a>
@@ -91,20 +117,46 @@ export default function Footer() {
             </div>
           </div>
 
-          {Object.entries(links).map(([title, items]) => (
-            <div key={title}>
-              <h4 className="font-display font-semibold text-sm text-on-dark mb-4">
-                {title}
-              </h4>
-              <ul className="space-y-2.5">
-                {items.map((item) => (
-                  <li key={item}>
-                    <span className="text-sm text-on-dark-muted">{item}</span>
-                  </li>
-                ))}
+          <div>
+            <h4 id="footer-nav-heading" className="font-display font-semibold text-sm text-on-dark mb-4">
+              Navegação
+            </h4>
+            <nav aria-labelledby="footer-nav-heading">
+              <ul className="flex flex-col gap-2">
+                {navLinks.map(({ label, href }) => {
+                  const isActive =
+                    pathname === "/portfolio" && href.startsWith("/portfolio");
+
+                  return (
+                    <li key={href}>
+                      <Link
+                        href={href}
+                        className={`${footerInsetLinkClass}${isActive ? " font-semibold text-primary-foreground" : ""}`}
+                        aria-current={isActive ? "page" : undefined}
+                      >
+                        {label}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
-            </div>
-          ))}
+            </nav>
+          </div>
+
+          <div>
+            <h4 id="footer-contact-heading" className="font-display font-semibold text-sm text-on-dark mb-4">
+              Contato
+            </h4>
+            <ul className="flex flex-col gap-2" aria-labelledby="footer-contact-heading">
+              {contactLinks.map(({ label, href }) => (
+                <li key={href}>
+                  <a href={href} className={footerInsetLinkClass}>
+                    {label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         <div className="border-t border-dark pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">

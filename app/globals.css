@@ -261,6 +261,22 @@ html {
   scroll-behavior: smooth;
 }
 
+@keyframes portfolio-highlight-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.45);
+  }
+  65% {
+    box-shadow: 0 0 0 14px hsl(var(--primary) / 0);
+  }
+}
+
+.portfolio-destination-highlight {
+  border-radius: 1.25rem;
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 12px;
+  animation: portfolio-highlight-pulse 1.25s ease-out 2;
+}
+
 /* ── Custom scrollbar ── */
 ::-webkit-scrollbar {
   width: 6px;
