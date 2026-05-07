@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { 
@@ -8,60 +8,99 @@ import {
   signOut, 
   onAuthStateChange
 } from '@/lib/auth';
+import { fetchLeads, updateLeadStatus, type Lead } from '@/lib/leads-store';
 import { toast } from 'sonner';
 import type { User } from '@supabase/supabase-js';
 import {
   LogOut, Shield, Users, BarChart3, 
-  Settings, Eye, Calendar, Clock
+  Settings, Calendar, Clock, RefreshCw
 } from 'lucide-react';
 
 const nexarLogo = '/assets/nexar-logo.png';
 
-// Dados mock para demonstração
-const mockStats = [
-  { label: 'Usuários Ativos', value: '1,247', icon: Users, change: '+12%', up: true },
-  { label: 'Sessões Hoje', value: '856', icon: Eye, change: '+8%', up: true },
-  { label: 'Taxa Conversão', value: '24.3%', icon: BarChart3, change: '+5%', up: true },
-  { label: 'Tempo Médio', value: '4m 32s', icon: Clock, change: '-15%', up: false },
-];
-
-const mockActivities = [
-  { action: 'Novo usuário cadastrado', user: 'Maria Silva', time: '2 min atrás', type: 'user' },
-  { action: 'Lead convertido', user: 'João Santos', time: '5 min atrás', type: 'conversion' },
-  { action: 'Sessão iniciada', user: 'Ana Costa', time: '8 min atrás', type: 'session' },
-  { action: 'Formulário enviado', user: 'Pedro Lima', time: '12 min atrás', type: 'form' },
-];
+const LEAD_STATUSES = [
+  { value: 'novo', label: 'Novo' },
+  { value: 'contatado', label: 'Contatado' },
+  { value: 'em_andamento', label: 'Em andamento' },
+  { value: 'convertido', label: 'Convertido' },
+  { value: 'arquivado', label: 'Arquivado' },
+] as const;
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [leadsLoading, setLeadsLoading] = useState(true);
+
+  const loadLeads = useCallback(async () => {
+    setLeadsLoading(true);
+    try {
+      const data = await fetchLeads();
+      setLeads(data);
+    } catch {
+      toast.error('Não foi possível carregar os leads.');
+      setLeads([]);
+    } finally {
+      setLeadsLoading(false);
+    }
+  }, []);
+
+  const stats = useMemo(() => {
+    const total = leads.length;
+    const novos = leads.filter((l) => (l.status || '').toLowerCase() === 'novo').length;
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const last7 = leads.filter((l) => new Date(l.created_at).getTime() >= weekAgo).length;
+    return [
+      {
+        label: 'Leads (total)',
+        value: total.toLocaleString('pt-BR'),
+        icon: Users,
+      },
+      {
+        label: 'Novos (status)',
+        value: novos.toLocaleString('pt-BR'),
+        icon: Shield,
+      },
+      {
+        label: 'Últimos 7 dias',
+        value: last7.toLocaleString('pt-BR'),
+        icon: BarChart3,
+      },
+      {
+        label: 'Atualização',
+        value: leadsLoading ? '…' : 'Ao vivo',
+        icon: Clock,
+      },
+    ];
+  }, [leads, leadsLoading]);
 
   useEffect(() => {
-    // Verificar autenticação inicial
     const checkAuth = async () => {
       const currentUser = await getCurrentUser();
       if (!currentUser) {
         router.push('/admin/login');
         return;
       }
-      
+
       setUser(currentUser);
       setLoading(false);
+      void loadLeads();
     };
 
-    checkAuth();
+    void checkAuth();
 
-    // Escutar mudanças na autenticação
-    const unsubscribe = onAuthStateChange((user) => {
-      setUser(user);
-      if (!user) {
+    const unsubscribe = onAuthStateChange((nextUser) => {
+      setUser(nextUser);
+      if (!nextUser) {
         router.push('/admin/login');
+      } else {
+        void loadLeads();
       }
     });
 
     return unsubscribe;
-  }, [router]);
+  }, [router, loadLeads]);
 
   const handleLogout = async () => {
     try {
@@ -72,11 +111,37 @@ export default function AdminDashboard() {
       } else {
         toast.error(result.error || 'Erro ao fazer logout');
       }
-    } catch (error) {
-      console.error('Erro no logout:', error);
+    } catch {
       toast.error('Erro inesperado ao fazer logout');
     }
   };
+
+  const handleStatusChange = async (leadId: string, status: string) => {
+    try {
+      await updateLeadStatus(leadId, status);
+      setLeads((prev) =>
+        prev.map((l) =>
+          l.id === leadId
+            ? { ...l, status, updated_at: new Date().toISOString() }
+            : l,
+        ),
+      );
+      toast.success('Status atualizado');
+    } catch {
+      toast.error('Erro ao atualizar status');
+    }
+  };
+
+  function formatDt(iso: string) {
+    try {
+      return new Date(iso).toLocaleString('pt-BR', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      });
+    } catch {
+      return iso;
+    }
+  }
 
   if (loading) {
     return (
@@ -116,9 +181,21 @@ export default function AdminDashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex justify-end mb-4">
+          <button
+            type="button"
+            onClick={() => void loadLeads()}
+            disabled={leadsLoading}
+            className="inline-flex items-center gap-2 rounded-lg bg-dark-card border border-dark px-3 py-2 text-xs font-medium text-on-dark-muted hover:text-on-dark transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={leadsLoading ? 'animate-spin' : ''} />
+            Atualizar lista
+          </button>
+        </div>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {mockStats.map((stat, i) => (
+          {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 20 }}
@@ -130,9 +207,6 @@ export default function AdminDashboard() {
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                   <stat.icon size={18} className="text-primary" />
                 </div>
-                <span className={`text-xs font-medium ${stat.up ? 'text-green-400' : 'text-accent'}`}>
-                  {stat.change}
-                </span>
               </div>
               <p className="text-2xl font-bold text-on-dark mb-1">{stat.value}</p>
               <p className="text-sm text-on-dark-muted">{stat.label}</p>
@@ -150,73 +224,92 @@ export default function AdminDashboard() {
           >
             <div className="flex items-center gap-2 mb-4">
               <Shield size={18} className="text-primary" />
-              <h3 className="font-display font-semibold text-on-dark">Status do Sistema</h3>
+              <h3 className="font-display font-semibold text-on-dark">Status</h3>
             </div>
-            
-            <div className="space-y-3">
-              {[
-                { service: 'API Principal', status: 'online', ping: '12ms' },
-                { service: 'Banco de Dados', status: 'online', ping: '8ms' },
-                { service: 'Autenticação', status: 'online', ping: '15ms' },
-                { service: 'Storage', status: 'online', ping: '22ms' },
-              ].map((item) => (
-                <div key={item.service} className="flex items-center justify-between py-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                    <span className="text-sm text-on-dark">{item.service}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-on-dark-muted">{item.ping}</span>
-                    <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-md font-medium">
-                      Online
-                    </span>
-                  </div>
-                </div>
-              ))}
+
+            <div className="space-y-3 text-sm text-on-dark-muted">
+              <p>
+                Formulário &quot;Montar meu sistema&quot; grava leads na tabela{' '}
+                <code className="text-primary text-xs">public.leads</code> via cliente Supabase (chave
+                anônima respeitando RLS).
+              </p>
+              <p>
+                Confirme no Supabase que políticas RLS permitem{' '}
+                <strong className="text-on-dark">INSERT</strong> anônimo e{' '}
+                <strong className="text-on-dark">SELECT/UPDATE</strong> apenas para sessões
+                autenticadas.
+              </p>
             </div>
           </motion.div>
 
-          {/* Atividades Recentes */}
+          {/* Leads do formulário */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
             className="lg:col-span-2 glass-dark rounded-2xl p-6"
           >
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <Calendar size={18} className="text-primary" />
-                <h3 className="font-display font-semibold text-on-dark">Atividades Recentes</h3>
+                <h3 className="font-display font-semibold text-on-dark">Leads (questionário)</h3>
               </div>
-              <button className="text-xs text-on-dark-muted hover:text-primary transition-colors">
-                Ver todas →
-              </button>
+              <span className="text-xs text-on-dark-muted">
+                {leadsLoading ? 'Carregando…' : `${leads.length} registro(s)`}
+              </span>
             </div>
 
-            <div className="space-y-3">
-              {mockActivities.map((activity, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.7 + i * 0.1 }}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-dark-card hover:bg-dark-border/30 transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <div className="w-2 h-2 rounded-full bg-primary"></div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-on-dark">{activity.action}</p>
-                    <p className="text-xs text-on-dark-muted">{activity.user}</p>
-                  </div>
-                  <span className="text-xs text-on-dark-muted">{activity.time}</span>
-                </motion.div>
-              ))}
+            <div className="space-y-3 max-h-[560px] overflow-y-auto pr-1">
+              {leadsLoading && leads.length === 0 ? (
+                <p className="text-sm text-on-dark-muted py-8 text-center">Carregando leads…</p>
+              ) : leads.length === 0 ? (
+                <p className="text-sm text-on-dark-muted py-8 text-center">
+                  Nenhum lead ainda. Envie um teste pelo botão &quot;Montar meu sistema&quot; na home.
+                </p>
+              ) : (
+                leads.map((lead, i) => (
+                  <motion.div
+                    key={lead.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: Math.min(0.05 * i, 0.4) }}
+                    className="rounded-lg bg-dark-card border border-dark p-4 space-y-2"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-on-dark">{lead.name}</p>
+                        <p className="text-xs text-on-dark-muted">{lead.company}</p>
+                      </div>
+                      <select
+                        value={lead.status}
+                        onChange={(e) => void handleStatusChange(lead.id, e.target.value)}
+                        className="text-xs rounded-lg bg-dark-base border border-dark px-2 py-1.5 text-on-dark focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        aria-label={`Status do lead ${lead.name}`}
+                      >
+                        {!LEAD_STATUSES.some((s) => s.value === lead.status) && (
+                          <option value={lead.status}>{lead.status}</option>
+                        )}
+                        {LEAD_STATUSES.map((s) => (
+                          <option key={s.value} value={s.value}>
+                            {s.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-1 text-xs text-on-dark-muted">
+                      <span>{lead.email}</span>
+                      <span>{lead.whatsapp}</span>
+                      <span>{lead.city_state}</span>
+                      <span>{formatDt(lead.created_at)}</span>
+                    </div>
+                  </motion.div>
+                ))
+              )}
             </div>
           </motion.div>
         </div>
 
-        {/* Aviso sobre auth Supabase */}
+        {/* Autenticação */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -226,9 +319,10 @@ export default function AdminDashboard() {
           <div className="flex items-start gap-3">
             <Settings size={18} className="text-primary mt-0.5" />
             <div>
-              <h4 className="text-sm font-semibold text-on-dark mb-1">Autenticação Supabase Ativa</h4>
+              <h4 className="text-sm font-semibold text-on-dark mb-1">Sessão atual</h4>
               <p className="text-xs text-on-dark-muted leading-relaxed">
-                Este dashboard está usando autenticação com Supabase Auth. 
+                Middleware do Next valida a sessão no servidor antes de servir{' '}
+                <code className="text-primary">/admin</code> (exceto login).
                 Usuário atual: <code className="text-primary">{user?.email}</code>
               </p>
             </div>

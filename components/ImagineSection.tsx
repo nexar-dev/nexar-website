@@ -469,7 +469,7 @@ export default function ImagineSection() {
             transition={{ delay: 0.2 }}
             className="mt-5 text-lg lg:text-xl font-semibold text-on-dark"
           >
-            e nós colocamos em prática.
+            e nós o colocamos em prática.
           </motion.p>
         </div>
 

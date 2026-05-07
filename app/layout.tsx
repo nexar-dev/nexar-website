@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter, Space_Grotesk } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
@@ -17,10 +17,20 @@ const spaceGrotesk = Space_Grotesk({
   display: 'swap',
 });
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f8f8fc' },
+    { media: '(prefers-color-scheme: dark)', color: '#12151f' },
+  ],
+  /** Indica que a UI suporta esquemas claro e escuro (formulários, barras de rolagem). */
+  colorScheme: 'dark light',
+};
+
 export const metadata: Metadata = {
   title: 'Nexar — Sistemas sob medida para sua empresa',
   description:
     'Desenvolvemos sistemas personalizados para gestão, automação e organização empresarial. Cada sistema é criado do zero para a realidade do seu negócio.',
+  applicationName: 'Nexar',
 };
 
 export default function RootLayout({
