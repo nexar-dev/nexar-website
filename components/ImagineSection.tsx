@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import TypeWriter from "@/components/TypeWriter";
@@ -14,7 +15,6 @@ import {
   Bell,
   Search,
   ShoppingCart,
-  TrendingUp,
   TrendingDown,
   Mail,
   Phone,
@@ -505,10 +505,12 @@ export default function ImagineSection() {
           <div className="relative animate-float rounded-2xl overflow-hidden border border-dark-border bg-dark-surface shadow-2xl">
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-dark-border">
               <div className="flex items-center gap-2">
-                <img
+                <Image
                   src={nexarLogo}
                   alt="Nexar"
-                  className="w-6 h-6 object-contain"
+                  width={24}
+                  height={24}
+                  className="object-contain"
                 />
                 <span className="text-xs font-semibold text-on-dark">
                   {activeTab.label}

@@ -10,11 +10,8 @@ type Props = {
 };
 
 export function Lightbox({ project, onClose }: Props) {
+  // Use project ID as key to reset state when project changes
   const [currentIndex, setCurrentIndex] = useState(0);
-
-  useEffect(() => {
-    setCurrentIndex(0);
-  }, [project]);
 
   useEffect(() => {
     if (!project) return;

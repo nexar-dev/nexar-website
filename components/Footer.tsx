@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Mail, MessageCircle } from "lucide-react";
 import { navLinks } from "@/lib/nav-links";
@@ -88,10 +89,12 @@ export default function Footer() {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <img
+              <Image
                 src={nexarLogo}
                 alt="Nexar"
-                className="w-16 h-16 object-contain"
+                width={64}
+                height={64}
+                className="object-contain"
               />
               <span className="font-display font-semibold text-lg text-on-dark">
                 Nex<span className="text-gradient">ar</span>

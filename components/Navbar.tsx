@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
@@ -42,10 +43,12 @@ export default function Navbar({
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
           <Link href="/" className="flex items-center gap-3">
-            <img
+            <Image
               src={nexarLogo}
               alt="Nexar"
-              className="h-10 w-auto object-contain"
+              width={40}
+              height={40}
+              className="object-contain"
             />
             <span
               className={`font-display font-bold text-2xl tracking-tight ${

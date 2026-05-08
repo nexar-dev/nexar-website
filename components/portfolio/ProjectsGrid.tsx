@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ProjectCard } from "./ProjectCard";
-import { Lightbox } from "./Lightbox";
+import { ProjectCard } from "@/components/portfolio/ProjectCard";
+import { Lightbox } from "@/components/portfolio/Lightbox";
 import { projects, type Project } from "@/lib/data/projects";
 
 export function ProjectsGrid() {
@@ -28,7 +28,7 @@ export function ProjectsGrid() {
         ))}
       </div>
 
-      <Lightbox project={active} onClose={() => setActive(null)} />
+      <Lightbox key={active?.id} project={active} onClose={() => setActive(null)} />
     </section>
   );
 }

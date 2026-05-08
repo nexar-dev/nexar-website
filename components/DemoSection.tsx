@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { Home, BarChart3, Users, ShoppingCart, Settings, Bell, Search, TrendingUp } from 'lucide-react';
@@ -27,7 +28,7 @@ function DashboardCard({ children, className = '' }: { children: React.ReactNode
     <div className={`animate-float rounded-2xl border border-dark-border bg-dark-surface shadow-2xl overflow-hidden ${className}`}>
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-dark-border">
         <div className="flex items-center gap-2">
-          <img src={nexarLogo} alt="Nexar" className="w-5 h-5 object-contain" />
+          <Image src={nexarLogo} alt="Nexar" width={20} height={20} className="object-contain" />
           <span className="text-[10px] font-semibold text-on-dark">Dashboard</span>
         </div>
         <div className="flex items-center gap-2">

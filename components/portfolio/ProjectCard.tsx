@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import type { Project } from '@/lib/data/projects';
 
@@ -21,12 +22,12 @@ export function ProjectCard({ project, index, onOpen }: Props) {
       className="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-3xl border border-border bg-card text-left shadow-card outline-none transition-[box-shadow,border-color] duration-500 hover:border-primary/25 hover:shadow-card-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
-        {/* eslint-disable-next-line @next/next/no-img-element -- native img for layout/animations */}
-        <img
+        <Image
           src={project.image}
           alt={project.title}
-          loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-[800ms] ease-out group-hover:scale-[1.04]"
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className="object-cover transition-transform duration-[800ms] ease-out group-hover:scale-[1.04]"
         />
 
         <div className="absolute right-4 top-4 flex h-9 w-9 translate-y-1 items-center justify-center rounded-full border border-white/30 bg-white/15 text-white opacity-0 backdrop-blur-md transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">

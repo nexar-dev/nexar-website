@@ -1,5 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
-import type { Database } from './supabase-types';
+import type { Database } from '@/lib/supabase-types';
 
 /**
  * Cliente browser com cookies (PKCE) — alinhado ao `createServerClient` do `proxy.ts`
